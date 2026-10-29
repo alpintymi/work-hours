@@ -600,7 +600,7 @@ function parseOre(s){
 }
 
 let entries={}, nome="";
-const today=iso(new Date());
+let today=iso(new Date());
 let sel=today;
 let viewY=new Date().getFullYear(), viewM=new Date().getMonth();
 let yearView=viewY;
@@ -750,6 +750,12 @@ $("week").addEventListener("scroll",()=>{
   },140);
 },{passive:true});
 $("d-today").addEventListener("click",()=>goTo(today));
+let hideAt=0;
+document.addEventListener("visibilitychange",()=>{
+  if(document.hidden){hideAt=Date.now();return}
+  if(hideAt&&Date.now()-hideAt>3000){today=iso(new Date());goTo(today);scrollTo({top:0})}
+});
+addEventListener("pageshow",e=>{if(e.persisted){today=iso(new Date());goTo(today)}});
 $("f-data").addEventListener("click",e=>{try{e.target.showPicker&&e.target.showPicker()}catch(_){}});
 function goTo(ds){loadEntry(ds);const d=fromIso(sel);viewY=d.getFullYear();viewM=d.getMonth();yearView=viewY;renderMonth();renderYear()}
 $("f-data").addEventListener("change",e=>{if(e.target.value)goTo(e.target.value)});
