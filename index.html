@@ -19,6 +19,30 @@ body{font:14px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
 img{max-width:100%}
 [hidden]{display:none!important}
 </style>
+<script>try{if(JSON.parse(localStorage.getItem("wh-lock")||"null"))document.documentElement.classList.add("locked")}catch(_){}</script>
+<style>
+html.locked .wrap{visibility:hidden}
+#lk{position:fixed;inset:0;z-index:99999;display:none;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:24px;box-sizing:border-box;background:linear-gradient(160deg,#3D6BF5,#6A4CE6);color:#fff;font-family:-apple-system,BlinkMacSystemFont,sans-serif;-webkit-user-select:none;user-select:none}
+html.locked #lk,#lk.open{display:flex}
+#lk .ic{width:64px;height:64px;border-radius:20px;background:rgba(255,255,255,.18);display:grid;place-items:center}
+#lk .ic svg{width:32px;height:32px}
+#lk h2{margin:0;font-size:20px;font-weight:600;text-align:center}
+#lk .sub{min-height:18px;font-size:14px;opacity:.85;text-align:center}
+#lk .dots{display:flex;gap:16px;height:16px}
+#lk .dots i{width:14px;height:14px;border-radius:50%;border:2px solid #fff;box-sizing:border-box}
+#lk .dots i.f{background:#fff}
+#lk .dots.shake{animation:lkshake .35s}
+@keyframes lkshake{20%,60%{transform:translateX(-9px)}40%,80%{transform:translateX(9px)}}
+#lk .pad{display:grid;grid-template-columns:repeat(3,76px);gap:14px 22px}
+#lk .pad button{width:76px;height:76px;border-radius:50%;border:none;background:rgba(255,255,255,.18);color:#fff;font-size:30px;font-weight:400;font-family:inherit}
+#lk .pad button:active{background:rgba(255,255,255,.38)}
+#lk .pad .nb{background:transparent;font-size:16px}
+#lk .acts{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+#lk .acts button{border:none;background:rgba(255,255,255,.2);color:#fff;border-radius:999px;padding:11px 20px;font-size:16px;font-weight:600;font-family:inherit}
+#lk .acts button.p{background:#fff;color:#3D6BF5}
+.lockrow{margin:14px 16px 28px;display:flex;align-items:center;justify-content:space-between;gap:10px;width:calc(100% - 32px);box-sizing:border-box;border:none;border-radius:16px;padding:14px 16px;background:linear-gradient(100deg,var(--nameA,#EAF1FF),var(--nameB,#F1EAFF));box-shadow:0 0 0 1px var(--name-ring,rgba(91,85,235,.14));font:600 16px -apple-system,BlinkMacSystemFont,sans-serif;color:var(--label,#111)}
+.lockrow span{font-weight:500;color:var(--tint,#3D6BF5);font-size:15px}
+</style>
 <style>
 /* Layout: elenco a gruppi in stile iOS — titolo grande, inserimento, mese, condivisione, anno */
 :root{
@@ -908,6 +932,100 @@ function renderAll(fromSync){
 init();
 })();
 if("serviceWorker" in navigator)addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
+</script>
+<div id="lk" role="dialog" aria-modal="true" aria-label="App lock"></div>
+<script>
+(function(){
+const KEY="wh-lock",$=id=>document.getElementById(id),lk=$("lk");
+const rd=()=>{try{return JSON.parse(localStorage.getItem(KEY)||"null")}catch(_){return null}};
+const wr=v=>{try{v?localStorage.setItem(KEY,JSON.stringify(v)):localStorage.removeItem(KEY)}catch(_){}};
+const b64=u=>btoa(String.fromCharCode(...new Uint8Array(u)));
+const ub64=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
+async function hash(pin,salt){const d=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(salt+":"+pin));return b64(d)}
+const bioOK=async()=>{try{return !!(window.PublicKeyCredential&&await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable())}catch(_){return false}};
+const ICON='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>';
+let hiddenAt=0,fails=0,until=0,busy=false;
+function pad(title,sub,onPin,extra){
+  let pin="";
+  lk.innerHTML='<div class="ic">'+ICON+'</div><h2></h2><div class="sub"></div><div class="dots"><i></i><i></i><i></i><i></i></div><div class="pad"></div><div class="acts"></div>';
+  lk.querySelector("h2").textContent=title;const subEl=lk.querySelector(".sub");subEl.textContent=sub||"";
+  const dots=lk.querySelectorAll(".dots i"),dd=lk.querySelector(".dots"),P=lk.querySelector(".pad");
+  const paint=()=>dots.forEach((d,i)=>d.classList.toggle("f",i<pin.length));
+  const key=(t,fn,cls)=>{const b=document.createElement("button");b.type="button";b.textContent=t;if(cls)b.className=cls;b.addEventListener("click",fn);P.appendChild(b);return b};
+  for(const n of [1,2,3,4,5,6,7,8,9]) key(String(n),()=>add(String(n)));
+  key("",()=>{},"nb");key("0",()=>add("0"));key("⌫",()=>{pin=pin.slice(0,-1);paint()},"nb");
+  async function add(c){if(busy||pin.length>=4)return;pin+=c;paint();if(pin.length===4){const p=pin;busy=true;const bad=await onPin(p);busy=false;if(bad){dd.classList.add("shake");if(navigator.vibrate)navigator.vibrate(60);setTimeout(()=>{dd.classList.remove("shake");pin="";paint();if(typeof bad==="string")subEl.textContent=bad},350)}}}
+  const A=lk.querySelector(".acts");
+  (extra||[]).forEach(([t,fn,p])=>{const b=document.createElement("button");b.type="button";b.textContent=t;if(p)b.className="p";b.addEventListener("click",fn);A.appendChild(b)});
+  return subEl;
+}
+function show(){lk.classList.add("open")}
+function hide(){lk.classList.remove("open");document.documentElement.classList.remove("locked");lk.innerHTML=""}
+async function bioGet(cfg){
+  const o={publicKey:{challenge:crypto.getRandomValues(new Uint8Array(32)),allowCredentials:[{type:"public-key",id:ub64(cfg.cred)}],userVerification:"required",timeout:60000}};
+  await navigator.credentials.get(o);
+}
+async function unlock(auto){
+  const cfg=rd();if(!cfg){hide();return}
+  show();
+  const extra=[];
+  if(cfg.cred)extra.push(["Use Face ID / Touch ID",async()=>{try{await bioGet(cfg);fails=0;hide()}catch(_){}},true]);
+  pad("Enter PIN","",async p=>{
+    if(Date.now()<until)return "Too many attempts. Wait a moment.";
+    if(await hash(p,cfg.salt)===cfg.pin){fails=0;hide();return false}
+    if(++fails>=5){until=Date.now()+30000;fails=0;return "Too many attempts. Wait 30 seconds."}
+    return "Wrong PIN";
+  },extra);
+  if(auto&&cfg.cred){try{await bioGet(cfg);fails=0;hide()}catch(_){}}
+}
+async function setupPin(onDone){
+  let first=null;
+  const run=()=>pad(first?"Confirm PIN":"Choose a 4-digit PIN",first?"":"You will need it to open the app",async p=>{
+    if(!first){first=p;run();return false}
+    if(p!==first){first=null;run();lk.querySelector(".sub").textContent="PINs did not match. Try again.";return false}
+    const salt=b64(crypto.getRandomValues(new Uint8Array(12)));
+    const cfg={salt,pin:await hash(p,salt),cred:(rd()||{}).cred||null};wr(cfg);onDone(cfg);return false;
+  },[["Cancel",()=>{lk.classList.remove("open");lk.innerHTML=""}]]);
+  show();run();
+}
+async function offerBio(cfg){
+  if(!(await bioOK())){done("Lock is on","PIN set. This phone has no Face ID or Touch ID, so the PIN will be used.");return}
+  lk.innerHTML='<div class="ic">'+ICON+'</div><h2>Use Face ID / Touch ID?</h2><div class="sub">Open the app with your face or fingerprint. The PIN stays as a backup.</div><div class="acts"></div>';
+  const A=lk.querySelector(".acts"),mk=(t,fn,p)=>{const b=document.createElement("button");b.type="button";b.textContent=t;if(p)b.className="p";b.addEventListener("click",fn);A.appendChild(b)};
+  mk("Not now",()=>done("Lock is on","The PIN is required to open the app."));
+  mk("Enable",async()=>{
+    try{
+      const c=await navigator.credentials.create({publicKey:{challenge:crypto.getRandomValues(new Uint8Array(32)),rp:{name:"Work Hours"},user:{id:crypto.getRandomValues(new Uint8Array(16)),name:"work-hours",displayName:"Work Hours"},pubKeyCredParams:[{type:"public-key",alg:-7},{type:"public-key",alg:-257}],authenticatorSelection:{authenticatorAttachment:"platform",userVerification:"required",residentKey:"discouraged"},timeout:60000}});
+      const n=rd()||cfg;n.cred=b64(c.rawId);wr(n);done("Lock is on","Face ID / Touch ID enabled. The PIN is the backup.");
+    }catch(_){done("Lock is on","Face ID / Touch ID could not be enabled. The PIN will be used.")}
+  },true);
+}
+function done(t,s){
+  lk.innerHTML='<div class="ic">'+ICON+'</div><h2></h2><div class="sub"></div><div class="acts"><button class="p" type="button">OK</button></div>';
+  lk.querySelector("h2").textContent=t;lk.querySelector(".sub").textContent=s;
+  lk.querySelector("button").addEventListener("click",()=>{lk.classList.remove("open");lk.innerHTML="";row()});
+}
+function menu(){
+  show();
+  lk.innerHTML='<div class="ic">'+ICON+'</div><h2>App lock is on</h2><div class="sub"></div><div class="acts"></div>';
+  const A=lk.querySelector(".acts"),mk=(t,fn,p)=>{const b=document.createElement("button");b.type="button";b.textContent=t;if(p)b.className="p";b.addEventListener("click",fn);A.appendChild(b)};
+  mk("Change PIN",()=>setupPin(c=>offerBio(c)));
+  mk("Turn off",()=>{wr(null);lk.classList.remove("open");lk.innerHTML="";row()});
+  mk("Close",()=>{lk.classList.remove("open");lk.innerHTML=""},true);
+}
+let rowEl;
+function row(){
+  if(!rowEl){rowEl=document.createElement("button");rowEl.type="button";rowEl.className="lockrow";const w=document.querySelector(".wrap");w.appendChild(rowEl);
+    rowEl.addEventListener("click",()=>{if(rd())menu();else setupPin(c=>offerBio(c))})}
+  rowEl.innerHTML='App lock <span></span>';rowEl.querySelector("span").textContent=rd()?"On":"Off";
+}
+row();
+if(rd())unlock(true);
+document.addEventListener("visibilitychange",()=>{
+  if(document.hidden){hiddenAt=Date.now();if(rd())document.documentElement.classList.add("locked")}
+  else if(rd()){if(Date.now()-hiddenAt>15000)unlock(true);else if(!lk.classList.contains("open"))document.documentElement.classList.remove("locked")}
+});
+})();
 </script>
 </body>
 </html>
