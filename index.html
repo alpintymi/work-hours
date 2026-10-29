@@ -322,6 +322,7 @@ input.name:focus{color:var(--label);box-shadow:0 0 0 2px var(--tint),0 6px 18px 
 .namecheck svg{width:22px;height:22px}
 .namecheck:active{transform:scale(.94)}
 .namechip{margin-top:10px;display:flex;align-items:center;gap:10px;align-self:flex-start;max-width:100%;border:none;border-radius:999px;padding:6px 16px 6px 6px;background:linear-gradient(100deg,var(--nameA),var(--nameB));box-shadow:0 0 0 1px var(--name-ring),0 6px 18px rgba(30,40,90,.08);font-weight:600;font-size:16px;color:var(--label)}
+.namechip.below{align-self:center;margin:14px auto 0}
 .namechip .av{width:30px;height:30px;border-radius:50%;background:linear-gradient(140deg,#1E90FF,#6A4CE6);display:grid;place-items:center;flex:none;color:#fff}
 .namechip .av svg{width:17px;height:17px}
 .namechip .t{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
@@ -362,8 +363,11 @@ input.name:focus{color:var(--label);box-shadow:0 0 0 2px var(--tint),0 6px 18px 
 #m-body .day.sel{background:linear-gradient(90deg,var(--tint-soft),transparent 90%)}
 #m-body .daybadge{background:var(--cell);box-shadow:0 1px 3px rgba(30,40,90,.08)}
 #m-body .day.sel .daybadge{background:linear-gradient(140deg,#1E90FF,#5B55EB)}
-#m-body .day .hrs{background:var(--pill);color:var(--pill-ink);padding:4px 10px;border-radius:999px;font-size:15px}
-#m-body .day.empty .hrs{background:none;color:var(--label3);padding:4px 10px}
+#m-body .day .hrs{width:42px;flex:none;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.05;text-align:center;background:var(--cell);color:var(--tint);padding:4px 0;border-radius:9px;box-shadow:0 1px 3px rgba(30,40,90,.08)}
+#m-body .day .hrs .w{font-size:11px;font-weight:600;text-transform:uppercase;color:var(--label2)}
+#m-body .day .hrs .n{font-size:17px;font-weight:600;font-weight:500;font-variant-numeric:tabular-nums;color:var(--tint)}
+#m-body .day.empty .hrs .n{color:var(--label3)}
+#m-body .day.empty .hrs{box-shadow:none;background:var(--fill)}
 #m-body .totalrow{background:linear-gradient(120deg,#1E90FF,#5B55EB 60%,#6A4CE6);color:#fff;padding-block:14px}
 #m-body .totalrow .val{color:#fff;font-size:20px}
 #m-body .totalrow::before{display:none}
@@ -390,11 +394,6 @@ input.name:focus{color:var(--label);box-shadow:0 0 0 2px var(--tint),0 6px 18px 
     <input class="name" id="f-nome" placeholder="Employee name" autocomplete="off" autocapitalize="words" aria-label="Employee name">
     <button class="namecheck" id="b-nome-ok" aria-label="Confirm name"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg></button>
   </div>
-  <button class="namechip" id="nameshow" hidden aria-label="Change employee name">
-    <span class="av"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="8.5" r="4"/><path d="M4.5 21c1.3-4 4.2-6 7.5-6s6.200 2 7.500 6z"/></svg></span>
-    <span class="t" id="nameshow-t"></span>
-    <span class="chg">Change</span>
-  </button>
 
   <div class="hdr" id="e-sub">Today</div>
   <div class="group">
@@ -431,6 +430,11 @@ input.name:focus{color:var(--label);box-shadow:0 0 0 2px var(--tint),0 6px 18px 
     </div>
   </div>
   <button class="linkbtn" id="b-elimina" hidden>Delete day</button>
+  <button class="namechip below" id="nameshow" hidden aria-label="Change employee name">
+    <span class="av"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="8.5" r="4"/><path d="M4.5 21c1.3-4 4.2-6 7.5-6s6.200 2 7.500 6z"/></svg></span>
+    <span class="t" id="nameshow-t"></span>
+    <span class="chg">Change</span>
+  </button>
 
   <div class="monthbar">
     <h2 id="m-title">—</h2>
@@ -745,7 +749,7 @@ function renderMonth(){
     b.querySelector(".t").textContent=GIORNI[wd]+" "+itDate(r.d).slice(0,5);
     const sub=b.querySelector(".sub");
     if(r.e&&r.e.nota)sub.textContent=r.e.nota;else sub.remove();
-    b.querySelector(".hrs").textContent=r.e?fmtH(r.e.ore)+" h":"—";
+    b.querySelector(".hrs").innerHTML='<span class="w">hrs</span><span class="n"></span>';b.querySelector(".hrs .n").textContent=r.e?fmtH(r.e.ore):"—";
     b.addEventListener("click",()=>{loadEntry(r.d);renderMonth();scrollTo({top:0,behavior:"smooth"})});
     box.appendChild(b);
   });
