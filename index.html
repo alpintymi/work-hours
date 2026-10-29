@@ -1123,6 +1123,7 @@ function row(){
   rowEl.innerHTML='App lock <span></span>';rowEl.querySelector("span").textContent=rd()?"On":"Off";
 }
 row();
+{const vf=document.createElement("div");vf.textContent="Version 23";vf.style.cssText="text-align:center;font:500 12px -apple-system,BlinkMacSystemFont,sans-serif;color:var(--label3,#8e8e93);padding:0 0 28px";document.querySelector(".wrap").appendChild(vf)}
 if(rd())unlock(true);
 document.addEventListener("visibilitychange",()=>{
   if(document.hidden){hiddenAt=Date.now();if(rd())document.documentElement.classList.add("locked")}
