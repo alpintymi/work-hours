@@ -499,8 +499,8 @@ input.name:focus{color:var(--label);box-shadow:0 0 0 2px var(--tint),0 6px 18px 
   <div class="hdr">Days</div>
   <div class="group" id="m-body"></div>
   <div class="group" style="margin-top:10px">
-    <button class="cell" id="b-lista" aria-expanded="true">
-      <span class="grow" id="b-lista-t">Collapse list</span>
+    <button class="cell" id="b-lista" aria-expanded="false">
+      <span class="grow" id="b-lista-t">Expand list</span>
       <svg class="lchev" viewBox="0 0 14 8" width="14" height="8"><path d="m1 7 6-6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
   </div>
@@ -761,7 +761,7 @@ $("week").addEventListener("scroll",()=>{
 },{passive:true});
 $("d-today").addEventListener("click",()=>goTo(today));
 let hideAt=Date.now();
-function backToToday(){payShow=false;$("pov").hidden=true;today=iso(new Date());goTo(today);scrollTo({top:0})}
+function backToToday(){payShow=false;setList(false);$("pov").hidden=true;today=iso(new Date());goTo(today);scrollTo({top:0})}
 document.addEventListener("visibilitychange",()=>{
   if(document.hidden){hideAt=Date.now();return}
   if(Date.now()-hideAt>1000)backToToday();
@@ -920,8 +920,9 @@ $("pov-x").addEventListener("click",()=>$("pov").hidden=true);
 $("pov").addEventListener("click",e=>{if(e.target.id==="pov")$("pov").hidden=true});
 document.addEventListener("keydown",e=>{if(e.key==="Escape")$("pov").hidden=true});
 let lastTap={t:0,m:-1};
-let listOpen=true;
-$("b-lista").addEventListener("click",()=>{listOpen=!listOpen;$("b-lista").setAttribute("aria-expanded",listOpen);$("b-lista-t").textContent=listOpen?"Collapse list":"Expand list";renderMonth()});
+let listOpen=false;
+function setList(o){listOpen=o;$("b-lista").setAttribute("aria-expanded",o);$("b-lista-t").textContent=o?"Collapse list":"Expand list"}
+$("b-lista").addEventListener("click",()=>{setList(!listOpen);renderMonth()});
 $("m-prev").addEventListener("click",()=>{viewM--;if(viewM<0){viewM=11;viewY--}yearView=viewY;renderMonth();renderYear()});
 $("m-next").addEventListener("click",()=>{viewM++;if(viewM>11){viewM=0;viewY++}yearView=viewY;renderMonth();renderYear()});
 
