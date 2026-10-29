@@ -757,12 +757,15 @@ $("week").addEventListener("scroll",()=>{
   },140);
 },{passive:true});
 $("d-today").addEventListener("click",()=>goTo(today));
-let hideAt=0;
+let hideAt=Date.now();
+function backToToday(){payShow=false;$("pov").hidden=true;today=iso(new Date());goTo(today);scrollTo({top:0})}
 document.addEventListener("visibilitychange",()=>{
   if(document.hidden){hideAt=Date.now();return}
-  if(hideAt&&Date.now()-hideAt>3000){payShow=false;$("pov").hidden=true;today=iso(new Date());goTo(today);scrollTo({top:0})}
+  if(Date.now()-hideAt>1000)backToToday();
 });
-addEventListener("pageshow",e=>{if(e.persisted){today=iso(new Date());goTo(today)}});
+addEventListener("pageshow",e=>{if(e.persisted)backToToday()});
+addEventListener("focus",()=>{if(iso(new Date())!==today)backToToday()});
+setInterval(()=>{if(!document.hidden&&iso(new Date())!==today)backToToday()},30000);
 $("f-data").addEventListener("click",e=>{try{e.target.showPicker&&e.target.showPicker()}catch(_){}});
 function goTo(ds){loadEntry(ds);const d=fromIso(sel);viewY=d.getFullYear();viewM=d.getMonth();yearView=viewY;renderMonth();renderYear()}
 $("f-data").addEventListener("change",e=>{if(e.target.value)goTo(e.target.value)});
