@@ -369,7 +369,10 @@ input.name:focus{color:var(--label);box-shadow:0 0 0 2px var(--tint),0 6px 18px 
 .cell:has(#f-nota){display:none}
 @media (max-width:420px){.herosave{top:12px;right:12px}}
 /* numero ore: abbastanza largo per 10.5, 11.5, 24 */
-.hero .hours #f-ore{width:5ch;min-width:0}
+.hero .stepper{justify-content:center}
+.hero .hours{position:relative;justify-content:center}
+.hero .hours #f-ore{width:5ch;min-width:0;text-align:center}
+.hero .hours .u{position:absolute;left:calc(50% + 2.9ch);bottom:12px}
 #e-sub{display:none}
 .ym{touch-action:manipulation}
 .paygrp .prow{display:flex;align-items:center;gap:10px;padding:13px 16px;font-size:17px}
@@ -442,7 +445,7 @@ input.name:focus{color:var(--label);box-shadow:0 0 0 2px var(--tint),0 6px 18px 
       <div class="weekday" id="e-weekday">—</div>
       <div class="bigdate" id="e-dayname">—</div>
       <div class="stepper">
-        <div class="hours"><input id="f-ore" inputmode="decimal" placeholder="0" autocomplete="off" aria-label="Hours worked"><span class="u">h</span></div>
+        <div class="hours"><input id="f-ore" inputmode="decimal" placeholder="0" autocomplete="off" aria-label="Hours worked"><span class="u">H</span></div>
       </div>
       <div class="picker" aria-label="Swipe to choose hours">
         <div class="pmark"></div>
