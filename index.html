@@ -371,6 +371,17 @@ input.name:focus{color:var(--label);box-shadow:0 0 0 2px var(--tint),0 6px 18px 
 /* numero ore: abbastanza largo per 10.5, 11.5, 24 */
 .hero .hours #f-ore{width:5ch;min-width:0}
 #e-sub{display:none}
+.ym{touch-action:manipulation}
+.paygrp .prow{display:flex;align-items:center;gap:10px;padding:13px 16px;font-size:17px}
+.paygrp .prow+.prow{border-top:.5px solid var(--sep)}
+.paygrp .prow .grow{flex:1;min-width:0}
+.paygrp .prow .v{font-variant-numeric:tabular-nums;font-weight:600}
+.paygrp .prow.neg .v{color:var(--red)}
+.paygrp .prow.sm{font-size:15px;color:var(--label2)}
+.paygrp .ratebox{display:flex;align-items:center;gap:4px;border-radius:12px;padding:6px 10px;background:var(--fill);font-weight:600}
+.paygrp .ratebox input{border:none;background:transparent;outline:none;width:6ch;text-align:right;font:inherit;color:var(--label);padding:0;-webkit-appearance:none}
+.paygrp .netrow{background:linear-gradient(120deg,#FF9F0A,#FF5E3A);color:#fff;font-weight:700;padding-block:15px;border-top:none!important}
+.paygrp .netrow .v{color:#fff;font-size:20px}
 /* interruttore e testi dei mesi */
 :root{--swA:#E9F0FF;--swB:#E6FAF4;--mon:#0F5C4C;--monh:#0B2540}
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--swA:#18213A;--swB:#132A26;--mon:#7FE3C4;--monh:#FFFFFF}}
@@ -525,6 +536,17 @@ input.name:focus{color:var(--label);box-shadow:0 0 0 2px var(--tint),0 6px 18px 
     <div class="year" id="y-grid"></div>
     <div class="cell totalrow" style="border-top:.5px solid var(--sep)"><span class="grow">Year total</span><span class="val" id="y-tot">0 h</span></div>
   </div>
+
+  <div class="monthbar"><h2 id="p-title">Pay</h2></div>
+  <div class="group paygrp">
+    <div class="prow"><span class="grow">Hourly rate</span><span class="ratebox"><span>£</span><input id="p-rate" inputmode="decimal" placeholder="0.00" autocomplete="off" aria-label="Hourly rate in pounds"></span></div>
+    <div class="prow"><span class="grow">Hours this month</span><span class="v" id="p-hours">0 h</span></div>
+    <div class="prow"><span class="grow">Gross pay</span><span class="v" id="p-gross">£0.00</span></div>
+    <div class="prow neg sm"><span class="grow">Income tax</span><span class="v" id="p-tax">£0.00</span></div>
+    <div class="prow neg sm"><span class="grow">National Insurance</span><span class="v" id="p-ni">£0.00</span></div>
+    <div class="prow netrow"><span class="grow">Net pay</span><span class="v" id="p-net">£0.00</span></div>
+  </div>
+  <div class="ftr">Estimate for this month on its own: England, tax code 1257L, 2026/27 rates, no student loan or pension. Your payslip may differ.</div>
 </div>
 
 <div class="overlay" id="ov" hidden>
@@ -536,6 +558,18 @@ input.name:focus{color:var(--label);box-shadow:0 0 0 2px var(--tint),0 6px 18px 
       <button class="b" id="ov-pdf">PDF</button>
     </div>
     <div class="sheetbody"><div class="paper" id="paper"></div></div>
+  </div>
+</div>
+<div class="overlay" id="pov" hidden>
+  <div class="sheet" role="dialog" aria-label="Month pay">
+    <div class="grabber"></div>
+    <div class="sheetbar"><button id="pov-x">Close</button><span class="t" id="pov-t">Pay</span><span></span></div>
+    <div class="sheetbody">
+      <div class="group paygrp" id="pov-m"></div>
+      <div class="hdr" id="pov-h2">Year to date</div>
+      <div class="group paygrp" id="pov-y"></div>
+      <div class="ftr">Estimate: England, tax code 1257L, 2026/27 rates, no student loan or pension. Each month is calculated on its own. Change the hourly rate in the Pay section.</div>
+    </div>
   </div>
 </div>
 <div class="toast" id="toast" hidden></div>
@@ -785,7 +819,7 @@ function renderMonth(){
   $("s-tot").textContent=fmtH(md.tot);
   $("s-gg").textContent=md.gg;
   $("s-med").textContent=fmtH(Math.round(md.med*10)/10);
-  updateShare(md);
+  updateShare(md);renderPay(md);
   const list=$("f-tutti").checked?md.rows:md.worked;
   const box=$("m-body");box.innerHTML="";
   if(!list.length){
@@ -812,6 +846,59 @@ function renderMonth(){
   t.querySelector(".val").textContent=fmtH(md.tot)+" h";
   box.appendChild(t);
 }
+
+/* ---------- paga (UK 2026/27: PA 12.570, basic 20% fino a 50.270, higher 40%; NI 8% tra 1.048 e 4.189 al mese, 2% oltre) ---------- */
+let rate=0;try{rate=parseFloat(localStorage.getItem("wh-rate"))||0}catch(_){}
+const GBP=n=>"£"+n.toLocaleString("en-GB",{minimumFractionDigits:2,maximumFractionDigits:2});
+function payCalc(g){
+  const PA=12570/12,BASIC=37700/12;
+  const ti=Math.max(0,g-PA);
+  const tax=Math.min(ti,BASIC)*0.20+Math.max(0,ti-BASIC)*0.40;
+  const PT=1048,UEL=4189;
+  const ni=Math.max(0,Math.min(g,UEL)-PT)*0.08+Math.max(0,g-UEL)*0.02;
+  return {tax:Math.round(tax*100)/100,ni:Math.round(ni*100)/100};
+}
+function renderPay(md){
+  $("p-title").textContent="Pay · "+cap(MESI[viewM])+" "+viewY;
+  const g=Math.round(md.tot*rate*100)/100,c=payCalc(g);
+  $("p-hours").textContent=fmtH(md.tot)+" h";
+  $("p-gross").textContent=GBP(g);
+  $("p-tax").textContent="− "+GBP(c.tax);
+  $("p-ni").textContent="− "+GBP(c.ni);
+  $("p-net").textContent=GBP(Math.max(0,g-c.tax-c.ni));
+}
+$("p-rate").value=rate?String(rate):"";
+$("p-rate").addEventListener("input",e=>{
+  rate=parseFloat(String(e.target.value).replace(",","."))||0;
+  try{localStorage.setItem("wh-rate",String(rate))}catch(_){}
+  renderPay(monthData(viewY,viewM));
+});
+
+function payRows(box,h,g,c,label){
+  const net=Math.max(0,g-c.tax-c.ni);
+  box.innerHTML="";
+  [["Hours",fmtH(h)+" h",""],["Gross pay",GBP(g),""],["Income tax","− "+GBP(c.tax),"neg sm"],["National Insurance","− "+GBP(c.ni),"neg sm"],["Net pay",GBP(net),"netrow"]].forEach(([a,b,cl])=>{
+    const r=document.createElement("div");r.className="prow "+cl;r.innerHTML='<span class="grow"></span><span class="v"></span>';
+    r.firstChild.textContent=a;r.lastChild.textContent=b;box.appendChild(r)});
+}
+function openPaySheet(y,m){
+  $("pov-t").textContent=cap(MESI[m])+" "+y;
+  const one=monthData(y,m);
+  const g1=Math.round(one.tot*rate*100)/100;
+  const box=$("pov-m");
+  payRows(box,one.tot,g1,payCalc(g1));
+  const r=document.createElement("div");r.className="prow";r.innerHTML='<span class="grow">Hourly rate</span><span class="v"></span>';
+  r.lastChild.textContent=rate?GBP(rate)+" / h":"not set";box.insertBefore(r,box.firstChild);
+  let H=0,G=0,T=0,N=0;
+  for(let i=0;i<=m;i++){const d=monthData(y,i);const g=Math.round(d.tot*rate*100)/100,c=payCalc(g);H+=d.tot;G+=g;T+=c.tax;N+=c.ni}
+  $("pov-h2").textContent="Year to date · Jan–"+MESI[m].slice(0,3)+" "+y;
+  payRows($("pov-y"),H,G,{tax:T,ni:N});
+  $("pov").hidden=false;
+}
+$("pov-x").addEventListener("click",()=>$("pov").hidden=true);
+$("pov").addEventListener("click",e=>{if(e.target.id==="pov")$("pov").hidden=true});
+document.addEventListener("keydown",e=>{if(e.key==="Escape")$("pov").hidden=true});
+let lastTap={t:0,m:-1};
 $("f-tutti").addEventListener("change",renderMonth);
 $("m-prev").addEventListener("click",()=>{viewM--;if(viewM<0){viewM=11;viewY--}yearView=viewY;renderMonth();renderYear()});
 $("m-next").addEventListener("click",()=>{viewM++;if(viewM>11){viewM=0;viewY++}yearView=viewY;renderMonth();renderYear()});
@@ -828,7 +915,7 @@ function renderYear(){
     b.querySelector(".m").textContent=MESI[m].slice(0,3);
     const h=b.querySelector(".h");h.textContent=t?fmtH(t):"—";if(!t)h.classList.add("zero");
     b.querySelector(".bar i").style.width=(t/max*100)+"%";
-    b.addEventListener("click",()=>{viewY=yearView;viewM=m;renderMonth();renderYear()});
+    b.addEventListener("click",()=>{const n=Date.now();const dbl=lastTap.m===m&&n-lastTap.t<450;lastTap={t:n,m};viewY=yearView;viewM=m;renderMonth();renderYear();if(dbl){lastTap={t:0,m:-1};openPaySheet(yearView,m)}});
     g.appendChild(b);
   });
   $("y-tot").textContent=fmtH(yt)+" h";
