@@ -375,6 +375,8 @@ input.name:focus{color:var(--label);box-shadow:0 0 0 2px var(--tint),0 6px 18px 
 .hero .hours .u{position:absolute;left:calc(50% + 68px);bottom:12px;font-size:18px;font-weight:600;letter-spacing:.01em}
 #e-sub{display:none}
 .ym{touch-action:manipulation}
+.navbtns #p-eye svg{width:20px;height:20px}
+.paygrp.masked .ratebox input{-webkit-text-security:disc;text-security:disc}
 .paygrp .prow{display:flex;align-items:center;gap:10px;padding:13px 16px;font-size:17px}
 .paygrp .prow+.prow{border-top:.5px solid var(--sep)}
 .paygrp .prow .grow{flex:1;min-width:0}
@@ -540,7 +542,9 @@ input.name:focus{color:var(--label);box-shadow:0 0 0 2px var(--tint),0 6px 18px 
     <div class="cell totalrow" style="border-top:.5px solid var(--sep)"><span class="grow">Year total</span><span class="val" id="y-tot">0 h</span></div>
   </div>
 
-  <div class="monthbar"><h2 id="p-title">Pay</h2></div>
+  <div class="monthbar"><h2 id="p-title">Pay</h2>
+    <div class="navbtns"><button id="p-eye" aria-label="Show values" aria-pressed="false"></button></div>
+  </div>
   <div class="group paygrp">
     <div class="prow"><span class="grow">Hourly rate</span><span class="ratebox"><span>£</span><input id="p-rate" inputmode="decimal" placeholder="0.00" autocomplete="off" aria-label="Hourly rate in pounds"></span></div>
     <div class="prow"><span class="grow">Hours this month</span><span class="v" id="p-hours">0 h</span></div>
@@ -756,7 +760,7 @@ $("d-today").addEventListener("click",()=>goTo(today));
 let hideAt=0;
 document.addEventListener("visibilitychange",()=>{
   if(document.hidden){hideAt=Date.now();return}
-  if(hideAt&&Date.now()-hideAt>3000){today=iso(new Date());goTo(today);scrollTo({top:0})}
+  if(hideAt&&Date.now()-hideAt>3000){payShow=false;$("pov").hidden=true;today=iso(new Date());goTo(today);scrollTo({top:0})}
 });
 addEventListener("pageshow",e=>{if(e.persisted){today=iso(new Date());goTo(today)}});
 $("f-data").addEventListener("click",e=>{try{e.target.showPicker&&e.target.showPicker()}catch(_){}});
@@ -867,15 +871,22 @@ function payCalc(g){
   const ni=Math.max(0,Math.min(g,UEL)-PT)*0.08+Math.max(0,g-UEL)*0.02;
   return {tax:Math.round(tax*100)/100,ni:Math.round(ni*100)/100};
 }
+const EYE_ON='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
+const EYE_OFF='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.9 17.9A10.6 10.6 0 0 1 12 19C5.6 19 2 12 2 12a18 18 0 0 1 4.1-5M9.9 5.2A10 10 0 0 1 12 5c6.4 0 10 7 10 7a18 18 0 0 1-2.2 3.3M1 1l22 22M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>';
+let payShow=false;
+const MASK="••••";
+function setEye(){const b=$("p-eye");b.innerHTML=payShow?EYE_ON:EYE_OFF;b.setAttribute("aria-pressed",payShow);b.setAttribute("aria-label",payShow?"Hide values":"Show values");document.querySelector(".paygrp").classList.toggle("masked",!payShow)}
 function renderPay(md){
   $("p-title").textContent="Pay · "+cap(MESI[viewM])+" "+viewY;
   const g=Math.round(md.tot*rate*100)/100,c=payCalc(g);
-  $("p-hours").textContent=fmtH(md.tot)+" h";
-  $("p-gross").textContent=GBP(g);
-  $("p-tax").textContent="− "+GBP(c.tax);
-  $("p-ni").textContent="− "+GBP(c.ni);
-  $("p-net").textContent=GBP(Math.max(0,g-c.tax-c.ni));
+  $("p-hours").textContent=payShow?fmtH(md.tot)+" h":MASK;
+  $("p-gross").textContent=payShow?GBP(g):MASK;
+  $("p-tax").textContent=payShow?"− "+GBP(c.tax):MASK;
+  $("p-ni").textContent=payShow?"− "+GBP(c.ni):MASK;
+  $("p-net").textContent=payShow?GBP(Math.max(0,g-c.tax-c.ni)):MASK;
+  setEye();
 }
+$("p-eye").addEventListener("click",()=>{payShow=!payShow;renderPay(monthData(viewY,viewM))});
 $("p-rate").value=rate?String(rate):"";
 $("p-rate").addEventListener("input",e=>{
   rate=parseFloat(String(e.target.value).replace(",","."))||0;
@@ -886,7 +897,7 @@ $("p-rate").addEventListener("input",e=>{
 function payRows(box,h,g,c,label){
   const net=Math.max(0,g-c.tax-c.ni);
   box.innerHTML="";
-  [["Hours",fmtH(h)+" h",""],["Gross pay",GBP(g),""],["Income tax","− "+GBP(c.tax),"neg sm"],["National Insurance","− "+GBP(c.ni),"neg sm"],["Net pay",GBP(net),"netrow"]].forEach(([a,b,cl])=>{
+  [["Hours",payShow?fmtH(h)+" h":MASK,""],["Gross pay",payShow?GBP(g):MASK,""],["Income tax",payShow?"− "+GBP(c.tax):MASK,"neg sm"],["National Insurance",payShow?"− "+GBP(c.ni):MASK,"neg sm"],["Net pay",payShow?GBP(net):MASK,"netrow"]].forEach(([a,b,cl])=>{
     const r=document.createElement("div");r.className="prow "+cl;r.innerHTML='<span class="grow"></span><span class="v"></span>';
     r.firstChild.textContent=a;r.lastChild.textContent=b;box.appendChild(r)});
 }
@@ -897,7 +908,7 @@ function openPaySheet(y,m){
   const box=$("pov-m");
   payRows(box,one.tot,g1,payCalc(g1));
   const r=document.createElement("div");r.className="prow";r.innerHTML='<span class="grow">Hourly rate</span><span class="v"></span>';
-  r.lastChild.textContent=rate?GBP(rate)+" / h":"not set";box.insertBefore(r,box.firstChild);
+  r.lastChild.textContent=!rate?"not set":(payShow?GBP(rate)+" / h":MASK);box.insertBefore(r,box.firstChild);
   let H=0,G=0,T=0,N=0;
   for(let i=0;i<=m;i++){const d=monthData(y,i);const g=Math.round(d.tot*rate*100)/100,c=payCalc(g);H+=d.tot;G+=g;T+=c.tax;N+=c.ni}
   $("pov-h2").textContent="Year to date · Jan–"+MESI[m].slice(0,3)+" "+y;
