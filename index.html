@@ -387,7 +387,7 @@ input.name:focus{color:var(--label);box-shadow:0 0 0 2px var(--tint),0 6px 18px 
   </div>
 
   <div class="nameedit" id="nameedit">
-    <input class="name" id="f-nome" placeholder="Employee name" autocomplete="off" aria-label="Employee name">
+    <input class="name" id="f-nome" placeholder="Employee name" autocomplete="off" autocapitalize="words" aria-label="Employee name">
     <button class="namecheck" id="b-nome-ok" aria-label="Confirm name"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg></button>
   </div>
   <button class="namechip" id="nameshow" hidden aria-label="Change employee name">
@@ -692,15 +692,17 @@ $("b-elimina").addEventListener("click",async()=>{
 });
 let nomeT;
 let editingName=false;
+function titleName(v){return String(v||"").replace(/\s+/g," ").replace(/(^|[\s\-'’])(\p{L})/gu,(m,a,b)=>a+b.toLocaleUpperCase())}
 function renderNameUI(){
+  if(nome){const t=titleName(nome.trim());if(t!==nome){nome=t;try{backend&&backend.saveNome(t).catch(()=>{})}catch(_){}}}
   const showChip=!!nome&&!editingName;
   $("nameedit").hidden=showChip;$("nameshow").hidden=!showChip;
   $("nameshow-t").textContent=nome;
   if(!showChip&&document.activeElement!==$("f-nome"))$("f-nome").value=nome;
 }
-$("f-nome").addEventListener("input",e=>{editingName=true;clearTimeout(nomeT);nomeT=setTimeout(()=>backend.saveNome(e.target.value.trim()).catch(()=>{}),700)});
+$("f-nome").addEventListener("input",e=>{editingName=true;clearTimeout(nomeT);nomeT=setTimeout(()=>backend.saveNome(titleName(e.target.value.trim())).catch(()=>{}),700)});
 async function confirmName(){
-  const v=$("f-nome").value.trim();
+  const v=titleName($("f-nome").value.trim());
   if(!v){toast("Enter the employee name");$("f-nome").focus();return}
   clearTimeout(nomeT);editingName=false;
   try{await backend.saveNome(v)}catch(e){}
