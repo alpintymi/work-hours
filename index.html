@@ -391,8 +391,11 @@ input.name:focus{color:var(--label);box-shadow:0 0 0 2px var(--tint),0 6px 18px 
 :root{--swA:#E9F0FF;--swB:#E6FAF4;--mon:#0F5C4C;--monh:#0B2540}
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--swA:#18213A;--swB:#132A26;--mon:#7FE3C4;--monh:#FFFFFF}}
 :root[data-theme="dark"]{--swA:#18213A;--swB:#132A26;--mon:#7FE3C4;--monh:#FFFFFF}
-.group:has(#f-tutti){background:linear-gradient(100deg,var(--swA),var(--swB))}
-.group:has(#f-tutti) .cell{background:transparent;font-weight:500}
+.group:has(#b-lista){background:linear-gradient(100deg,var(--swA),var(--swB))}
+#b-lista .lchev{color:var(--tint);transition:transform .2s}
+#b-lista[aria-expanded="false"] .lchev{transform:rotate(180deg)}
+#b-lista{text-align:left;font-weight:600;color:var(--tint)}
+.group:has(#b-lista) .cell{background:transparent;font-weight:500}
 .group:has(#y-grid) .ym .m{color:var(--mon);font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
 .group:has(#y-grid) .ym .h{color:var(--monh);font-size:18px;font-weight:700}
 .group:has(#y-grid) .ym .h.zero{color:var(--mon);opacity:.55;font-weight:500}
@@ -496,10 +499,10 @@ input.name:focus{color:var(--label);box-shadow:0 0 0 2px var(--tint),0 6px 18px 
   <div class="hdr">Days</div>
   <div class="group" id="m-body"></div>
   <div class="group" style="margin-top:10px">
-    <div class="cell switchrow">
-      <label for="f-tutti" class="grow">Show days with no hours</label>
-      <span class="switch"><input type="checkbox" id="f-tutti" role="switch" checked><span></span></span>
-    </div>
+    <button class="cell" id="b-lista" aria-expanded="true">
+      <span class="grow" id="b-lista-t">Collapse list</span>
+      <svg class="lchev" viewBox="0 0 14 8" width="14" height="8"><path d="m1 7 6-6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
   </div>
 
   <div class="hdr">End of month</div>
@@ -835,13 +838,8 @@ function renderMonth(){
   $("s-gg").textContent=md.gg;
   $("s-med").textContent=fmtH(Math.round(md.med*10)/10);
   updateShare(md);renderPay(md);
-  const list=$("f-tutti").checked?md.rows:md.worked;
+  const list=listOpen?md.rows:[];
   const box=$("m-body");box.innerHTML="";
-  if(!list.length){
-    const c=document.createElement("div");c.className="cell";
-    c.innerHTML='<span class="grow" style="color:var(--label2)">No hours logged this month.</span>';
-    box.appendChild(c);return;
-  }
   list.forEach(r=>{
     const wd=r.dt.getDay();
     const b=document.createElement("button");
@@ -921,7 +919,8 @@ $("pov-x").addEventListener("click",()=>$("pov").hidden=true);
 $("pov").addEventListener("click",e=>{if(e.target.id==="pov")$("pov").hidden=true});
 document.addEventListener("keydown",e=>{if(e.key==="Escape")$("pov").hidden=true});
 let lastTap={t:0,m:-1};
-$("f-tutti").addEventListener("change",renderMonth);
+let listOpen=true;
+$("b-lista").addEventListener("click",()=>{listOpen=!listOpen;$("b-lista").setAttribute("aria-expanded",listOpen);$("b-lista-t").textContent=listOpen?"Collapse list":"Expand list";renderMonth()});
 $("m-prev").addEventListener("click",()=>{viewM--;if(viewM<0){viewM=11;viewY--}yearView=viewY;renderMonth();renderYear()});
 $("m-next").addEventListener("click",()=>{viewM++;if(viewM>11){viewM=0;viewY++}yearView=viewY;renderMonth();renderYear()});
 
