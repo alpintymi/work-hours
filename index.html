@@ -511,24 +511,20 @@ input.name:focus{color:var(--label);box-shadow:0 0 0 2px var(--tint),0 6px 18px 
     </button>
     <button class="cell" id="b-pdf">
       <span class="icon i-red"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg></span>
-      <span class="grow">Download PDF<div class="sub">On iPhone this opens the Share sheet</div></span>
+      <span class="grow">Download PDF<div class="sub">Save or share the PDF</div></span>
     </button>
-    <a class="cell" id="b-wa" target="_blank" rel="noopener">
+    <button class="cell" id="b-wa">
       <span class="icon i-green"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.2a9.7 9.7 0 0 0-8.4 14.6L2.3 21.7l5-1.3A9.7 9.7 0 1 0 12 2.2zm5.6 13.7c-.2.7-1.4 1.3-2 1.3-.5.1-1.2.1-1.9-.1a17 17 0 0 1-1.8-.7 13.5 13.5 0 0 1-5.1-4.5c-.4-.6-1.1-1.6-1.1-3.1 0-1.4.8-2.2 1.1-2.5.3-.3.6-.4.8-.4h.6c.2 0 .4 0 .6.5l.9 2.1c.1.2.1.4 0 .5l-.3.5-.4.5c-.1.1-.3.3-.1.6.2.3.8 1.3 1.7 2.1 1.2 1 2.1 1.4 2.4 1.5.3.1.5.1.6-.1l.9-1.1c.2-.3.4-.2.6-.1l2 1c.3.1.5.2.5.3.1.1.1.7-.1 1.3z"/></svg></span>
-      <span class="grow">Send as text on WhatsApp</span>
+      <span class="grow">Send PDF on WhatsApp<div class="sub">Choose WhatsApp in the Share sheet</div></span>
       <svg class="chev" viewBox="0 0 8 13"><path d="m1.5 1.5 5 5-5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-    </a>
-    <a class="cell" id="b-mail">
+    </button>
+    <button class="cell" id="b-mail">
       <span class="icon i-blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg></span>
-      <span class="grow">Send by email</span>
+      <span class="grow">Send PDF by email<div class="sub">Choose Mail in the Share sheet</div></span>
       <svg class="chev" viewBox="0 0 8 13"><path d="m1.5 1.5 5 5-5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-    </a>
-    <button class="cell" id="b-copia">
-      <span class="icon i-gray"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h8"/></svg></span>
-      <span class="grow">Copy text</span>
     </button>
   </div>
-  <div class="ftr">To send the PDF, download it and attach it to the WhatsApp chat or the email.</div>
+  <div class="ftr">The PDF is attached automatically: just pick WhatsApp or Mail.</div>
 
   <div class="monthbar">
     <h2 id="y-title">Year</h2>
@@ -962,15 +958,7 @@ function testo(md){
   L.push("TOTAL: "+fmtH(md.tot)+" h ("+fmtHM(md.tot)+")");
   return L.join("\n");
 }
-function updateShare(md){
-  const t=testo(md);
-  $("b-wa").href="https://wa.me/?text="+encodeURIComponent(t);
-  $("b-mail").href="mailto:?subject="+encodeURIComponent(titolo()+(nome?" – "+nome:""))+"&body="+encodeURIComponent(t);
-}
-$("b-copia").addEventListener("click",async()=>{
-  try{await navigator.clipboard.writeText(testo());toast("Text copied")}
-  catch(e){apriAnteprima();toast("Select the text in the preview")}
-});
+function updateShare(md){}
 
 function apriAnteprima(){
   const md=monthData(viewY,viewM);
@@ -1034,6 +1022,8 @@ async function scaricaPdf(){
   setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},4000);toast("PDF downloaded");
 }
 $("b-pdf").addEventListener("click",scaricaPdf);
+$("b-wa").addEventListener("click",scaricaPdf);
+$("b-mail").addEventListener("click",scaricaPdf);
 $("ov-pdf").addEventListener("click",scaricaPdf);
 
 function renderAll(fromSync){
