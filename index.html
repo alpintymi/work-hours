@@ -834,7 +834,7 @@ function renderMonth(){
     b.innerHTML='<span class="daybadge"><span class="w"></span><span class="n"></span></span><span class="grow"><div class="t"></div><div class="sub"></div></span><span class="hrs"></span>'+CHEV;
     b.querySelector(".w").textContent=GG3[wd];
     b.querySelector(".n").textContent=r.dt.getDate();
-    b.querySelector(".t").textContent=GIORNI[wd]+" "+itDate(r.d).slice(0,5);
+    b.querySelector(".t").textContent=GIORNI[wd];
     const sub=b.querySelector(".sub");
     if(r.e&&r.e.nota)sub.textContent=r.e.nota;else sub.remove();
     b.querySelector(".hrs").innerHTML='<span class="w">hrs</span><span class="n"></span>';b.querySelector(".hrs .n").textContent=r.e?fmtH(r.e.ore):"—";
