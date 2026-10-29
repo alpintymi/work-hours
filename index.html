@@ -281,8 +281,12 @@ input.name:focus{color:var(--label);box-shadow:0 0 0 2px var(--tint),0 6px 18px 
 .datepill:focus-within{box-shadow:0 0 0 2px var(--tint)}
 .datecell .datenav button#d-prev,.datecell .datenav button#d-next{width:42px;height:42px;border-radius:13px}
 .todaybtn{flex:none;border:none;border-radius:999px;padding:9px 13px;font-size:14px;font-weight:700;color:#fff;background:linear-gradient(140deg,#1E90FF,#5B55EB);box-shadow:0 4px 10px rgba(61,107,245,.28)}
-.week{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
-.wd{border:none;background:transparent;border-radius:12px;padding:4px 0;display:flex;flex-direction:column;align-items:center;gap:3px;min-width:0}
+.datenav:has(.todaybtn:not([hidden])) #d-label{font-size:14px}
+.datenav:has(.todaybtn:not([hidden])) .datepill{gap:5px}
+.hero ~ .cell .datenav button.todaybtn{font-size:13px;width:auto;height:42px;border-radius:13px;padding:0 9px;color:#fff;background:linear-gradient(140deg,#1E90FF,#5B55EB);box-shadow:0 4px 10px rgba(61,107,245,.28)}
+.week{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding:0 calc(var(--cw,48px)*3)}
+.week::-webkit-scrollbar{display:none}
+.wd{flex:0 0 var(--cw,48px);scroll-snap-align:center;border:none;background:transparent;border-radius:12px;padding:4px 0;display:flex;flex-direction:column;align-items:center;gap:3px;min-width:0}
 .wd .w{font-size:11px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:var(--label2)}
 .wd.we .w{color:var(--red)}
 .wd .n{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;font-size:17px;font-weight:600;font-variant-numeric:tabular-nums;color:var(--label)}
@@ -643,24 +647,50 @@ function markSeg(fromTyping){
   setPicker(parseOre($("f-ore").value),!!fromTyping||document.readyState==="complete");
 }
 $("f-ore").addEventListener("input",()=>markSeg(true));
+let wkBase=null,wkLock=false,wkLockT,wkT;
+const WKN=121,WKH=60;
+function wkSetLock(ms){wkLock=true;clearTimeout(wkLockT);wkLockT=setTimeout(()=>wkLock=false,ms)}
 function renderWeek(){
   const d=fromIso(sel);
   $("d-label").textContent=GG3[d.getDay()]+", "+d.getDate()+" "+MESI[d.getMonth()].slice(0,3)+" "+d.getFullYear();
   $("d-today").hidden=sel===today;
-  const mon=new Date(d);mon.setDate(d.getDate()-((d.getDay()+6)%7));
-  const w=$("week");w.innerHTML="";
-  for(let i=0;i<7;i++){
-    const x=new Date(mon);x.setDate(mon.getDate()+i);const ds=iso(x);const wd=x.getDay();
-    const b=document.createElement("button");
+  const w=$("week");
+  const cw=(w.clientWidth/7)||48;
+  w.style.setProperty("--cw",cw+"px");
+  let idx=wkBase?Math.round((d-fromIso(wkBase))/864e5):-1;
+  if(idx<12||idx>WKN-13){
+    const b0=new Date(d);b0.setDate(d.getDate()-WKH);wkBase=iso(b0);idx=WKH;
+    w.innerHTML="";
+    for(let i=0;i<WKN;i++){
+      const x=new Date(b0);x.setDate(b0.getDate()+i);const ds=iso(x);const wd=x.getDay();
+      const b=document.createElement("button");
+      b.dataset.d=ds;b.dataset.wd=wd;
+      b.innerHTML='<span class="w"></span><span class="n"></span><span class="dt"></span>';
+      b.querySelector(".w").textContent=GG3[wd].charAt(0);
+      b.querySelector(".n").textContent=x.getDate();
+      b.addEventListener("click",()=>goTo(ds));
+      w.appendChild(b);
+    }
+  }
+  for(const b of w.children){
+    const ds=b.dataset.d,wd=+b.dataset.wd;
     b.className="wd"+(wd===0||wd===6?" we":"")+(ds===sel?" sel":"")+(ds===today?" today":"")+(entries[ds]?" has":"");
     b.setAttribute("aria-label",GIORNI[wd]+" "+itDate(ds)+(entries[ds]?", "+fmtH(entries[ds].ore)+" hours":""));
-    b.innerHTML='<span class="w"></span><span class="n"></span><span class="dt"></span>';
-    b.querySelector(".w").textContent=GG3[wd].charAt(0);
-    b.querySelector(".n").textContent=x.getDate();
-    b.addEventListener("click",()=>goTo(ds));
-    w.appendChild(b);
   }
+  const first=!w.dataset.ready;w.dataset.ready="1";
+  wkSetLock(first?150:600);
+  w.scrollTo({left:idx*cw,behavior:first?"auto":"smooth"});
 }
+$("week").addEventListener("scroll",()=>{
+  clearTimeout(wkT);
+  wkT=setTimeout(()=>{
+    if(wkLock||!wkBase)return;
+    const w=$("week"),cw=w.clientWidth/7;
+    const i=Math.max(0,Math.min(WKN-1,Math.round(w.scrollLeft/cw)));
+    const dd=fromIso(wkBase);dd.setDate(dd.getDate()+i);const ds=iso(dd);
+    if(ds!==sel)goTo(ds);else{wkSetLock(300);w.scrollTo({left:i*cw,behavior:"smooth"})}
+  },140);
+},{passive:true});
 $("d-today").addEventListener("click",()=>goTo(today));
 $("f-data").addEventListener("click",e=>{try{e.target.showPicker&&e.target.showPicker()}catch(_){}});
 function goTo(ds){loadEntry(ds);const d=fromIso(sel);viewY=d.getFullYear();viewM=d.getMonth();yearView=viewY;renderMonth();renderYear()}
