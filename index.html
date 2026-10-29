@@ -983,8 +983,7 @@ function apriAnteprima(){
   const tbl=document.createElement("table");
   tbl.innerHTML='<thead><tr><th>Date</th><th>Day</th><th class="r">Hours</th><th>Note</th></tr></thead><tbody></tbody><tfoot><tr><td colspan="2"></td><td class="r"></td><td></td></tr></tfoot>';
   const tb=tbl.querySelector("tbody");
-  if(!md.worked.length){const tr=document.createElement("tr");tr.innerHTML='<td colspan="4">No hours logged.</td>';tb.appendChild(tr)}
-  md.worked.forEach(r=>{const tr=document.createElement("tr");[itDate(r.d),GIORNI[r.dt.getDay()],fmtH(r.e.ore),r.e.nota].forEach((t,i)=>{const td=document.createElement("td");td.textContent=t;if(i===2)td.className="r";tr.appendChild(td)});tb.appendChild(tr)});
+  md.rows.forEach(r=>{const tr=document.createElement("tr");const sun=r.dt.getDay()===0||r.dt.getDay()===6;[itDate(r.d),GIORNI[r.dt.getDay()],r.e?fmtH(r.e.ore):"",r.e?r.e.nota:""].forEach((t,i)=>{const td=document.createElement("td");td.textContent=t;if(i===2)td.className="r";if(sun)td.style.color="#D92D20";tr.appendChild(td)});tb.appendChild(tr)});
   tbl.querySelector("tfoot td").textContent="Total ("+md.gg+" days)";
   tbl.querySelector("tfoot .r").textContent=fmtH(md.tot)+" h";
   const w=document.createElement("div");w.className="tw";w.appendChild(tbl);p.appendChild(w);
@@ -1005,18 +1004,18 @@ function creaPdf(){
   doc.setFont("helvetica","normal");doc.setFontSize(10);doc.setTextColor(100);
   doc.text("Employee: "+(nome||"-"),18,30);
   doc.text("Generated on "+itDate(today),192,30,{align:"right"});
-  const body=md.worked.map(r=>[itDate(r.d),GIORNI[r.dt.getDay()],fmtH(r.e.ore),r.e.nota||""]);
+  const body=md.rows.map(r=>[itDate(r.d),GIORNI[r.dt.getDay()],r.e?fmtH(r.e.ore):"",r.e?(r.e.nota||""):""]);const sunRows=md.rows.map(r=>r.dt.getDay()===0||r.dt.getDay()===6);
   doc.autoTable({
     startY:36,head:[["Date","Day","Hours","Note"]],
-    body:body.length?body:[["No hours logged","","",""]],
+    body:body,
     foot:[["Total ("+md.gg+" days)","",fmtH(md.tot)+" h",""]],
     theme:"plain",margin:{left:18,right:18},
-    styles:{font:"helvetica",fontSize:10,cellPadding:2.4,textColor:20},
+    styles:{font:"helvetica",fontSize:9.5,cellPadding:1.5,textColor:20},
     headStyles:{fontStyle:"bold",textColor:100,lineWidth:{bottom:0.4},lineColor:20},
     bodyStyles:{lineWidth:{bottom:0.1},lineColor:220},
     footStyles:{fontStyle:"bold",lineWidth:{top:0.6},lineColor:20},
     columnStyles:{0:{cellWidth:28},1:{cellWidth:30},2:{cellWidth:22}},
-    didParseCell:d=>{if(d.column.index===2)d.cell.styles.halign="right"}
+    didParseCell:d=>{if(d.column.index===2)d.cell.styles.halign="right";if(d.section==="body"&&sunRows[d.row.index])d.cell.styles.textColor=[217,45,32]}
   });
   const y=Math.min(doc.lastAutoTable.finalY+28,275);
   doc.setDrawColor(150);doc.line(18,y,88,y);doc.line(122,y,192,y);
