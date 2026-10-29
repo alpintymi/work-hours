@@ -746,10 +746,13 @@ function renderWeek(){
   wkSetLock(first?150:600);
   w.scrollTo({left:idx*cw,behavior:first?"auto":"smooth"});
 }
+let wkUser=false,wkUserT;
+["touchstart","pointerdown","wheel","mousedown"].forEach(ev=>$("week").addEventListener(ev,()=>{wkUser=true;clearTimeout(wkUserT)},{passive:true}));
+["touchend","touchcancel","pointerup"].forEach(ev=>$("week").addEventListener(ev,()=>{clearTimeout(wkUserT);wkUserT=setTimeout(()=>wkUser=false,1500)},{passive:true}));
 $("week").addEventListener("scroll",()=>{
   clearTimeout(wkT);
   wkT=setTimeout(()=>{
-    if(wkLock||!wkBase)return;
+    if(wkLock||!wkBase||!wkUser)return;
     const w=$("week"),cw=w.clientWidth/7;
     const i=Math.max(0,Math.min(WKN-1,Math.round(w.scrollLeft/cw)));
     const dd=fromIso(wkBase);dd.setDate(dd.getDate()+i);const ds=iso(dd);
